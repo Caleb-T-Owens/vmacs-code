@@ -5,7 +5,7 @@ imap <C-b> <Left>
 imap <M-b> <C-Left>
 imap <C-f> <Right>
 imap <M-f> <C-Right>
-imap <C-a> <C-o>:call <SID>home()<CR>
+imap <C-a> <Esc>^i
 imap <C-e> <End>
 imap <C-v> <Esc><C-d>i
 imap <M-v> <Esc><C-u>i
@@ -20,14 +20,26 @@ nnoremap <C-f> <C-w>l
 imap <C-d> <Del>
 imap <M-d> <C-Del>
 imap <C-h> <BS>
-imap <C-k> <C-r>=<SID>kill()<CR>
+imap <C-k> <Esc>:call KillAfter()<CR>a
+imap <C-k><Backspace> <Esc><C-v>^di
+
+function! KillAfter()
+  let col = col('.')
+  let line = line('.')
+  if col == 1
+    call setline(line, '')
+  else
+    call setline(line, getline(line)[: col - 1])
+  endif
+endfunction
+
+set timeoutlen=250
 
 " Pasting
 imap <C-y> <Esc>"*pa
 
 " File Jumping
 map <C-x><C-f> <Esc>:GFiles<CR>
-map <C-x><C-F> <Esc>:Files<CR>
 
 " File Management
 imap <C-x><C-s> <Esc>:w<CR>a
@@ -38,41 +50,20 @@ inoremap <C-x><C-c> <Esc>:qa<CR>
 
 set number
 
-let g:netrw_banner = 0
-let g:netrw_liststyle = 3
-let g:netrw_browse_split = 4
-let g:netrw_altv = 1
-let g:netrw_winsize = 20
-augroup ProjectDrawer
-  autocmd!
-  autocmd VimEnter * :Vexplore
-augroup END
+" Netrw sidebar
 
-function! s:home()
-  let start_column = col('.')
-  normal! ^
-  if col('.') == start_column
-    normal! 0
-  endif
-  return ''
-endfunction
+" let g:netrw_banner = 0
+" let g:netrw_liststyle = 3
+" let g:netrw_browse_split = 4
+" let g:netrw_altv = 1
+" let g:netrw_winsize = 20
 
-function! s:kill()
-  let [text_before, text_after] = s:split_line()
-  if len(text_after) == 0
-    normal! J
-  else
-    call setline(line('.'), text_before)
-  endif
-  return ''
-endfunction
+" augroup ProjectDrawer
+"   autocmd!
+"   autocmd VimEnter * :Vexplore
+" augroup END
 
-function! s:split_line()
-  let line_text = getline(line('.'))
-  let text_after  = line_text[col('.')-1 :]
-  let text_before = (col('.') > 1) ? line_text[: col('.')-2] : ''
-  return [text_before, text_after]
-endfunction
+" Plugins
 
 call plug#begin('~/.vim/plugged')
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
@@ -80,6 +71,22 @@ Plug 'sheerun/vim-polyglot'
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 Plug 'morhetz/gruvbox'
+Plug 'preservim/nerdtree'
 call plug#end()
 
 colorscheme gruvbox
+
+" Coc prettier
+
+command! -nargs=0 Prettier :call CocAction('runCommand', 'prettier.formatFile')
+
+" NerdTree sidebar
+
+let g:NERDTreeWinSize = 20
+
+autocmd BufEnter * if bufname('#') =~ 'NERD_tree_\d\+' && bufname('%') !~ 'NERD_tree_\d\+' && winnr('$') > 1 |
+    \ let buf=bufnr() | buffer# | execute "normal! \<C-W>w" | execute 'buffer'.buf | endif
+
+autocmd BufWinEnter * silent NERDTreeMirror
+
+let NERDTreeQuitOnOpen=0
